@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
 
     const anthropic = getAnthropic();
     const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: "claude-3-haiku-20240307",
       max_tokens: 300,
       messages: [{ role: "user", content: prompt }],
     });
@@ -51,6 +51,13 @@ export async function POST(req: NextRequest) {
       message.content[0]?.type === "text"
         ? message.content[0].text.trim()
         : "";
+
+    if (!replyText) {
+      return NextResponse.json(
+        { error: "AI returned empty response" },
+        { status: 500 }
+      );
+    }
 
     // Save to Supabase
     await supabase.from("replies").insert({
@@ -62,10 +69,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ reply: replyText });
   } catch (error) {
-    console.error("Generate error:", error);
-    return NextResponse.json(
-      { error: "Failed to generate reply" },
-      { status: 500 }
-    );
+    const msg =
+      error instanceof Error ? error.message : "Failed to generate reply";
+    console.error("Generate error:", msg);
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

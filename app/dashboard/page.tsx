@@ -75,6 +75,11 @@ export default function DashboardPage() {
           return;
         }
 
+        if (!result.reply) {
+          setError("AI returned an empty response");
+          return;
+        }
+
         setReply(result.reply);
         const s = createClient();
         const { data: h } = await s
@@ -84,8 +89,8 @@ export default function DashboardPage() {
           .order("created_at", { ascending: false })
           .limit(50);
         if (h) setHistory(h as Reply[]);
-      } catch {
-        setError("Failed to generate reply. Please try again.");
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Failed to generate reply");
       } finally {
         setGenerating(false);
       }
