@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminSupabase } from "@/lib/supabase-server";
-import { getAnthropic } from "@/lib/anthropic";
+import { getGemini } from "@/lib/gemini";
 
 export async function POST(req: NextRequest) {
   try {
@@ -37,20 +37,12 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Call Anthropic
     const prompt = `You are a professional business owner named ${businessName}. Write a polite, helpful, on-brand reply to this customer review. Tone: ${tone}. Keep it under 150 words. Sound human, not robotic. Do not start with 'Thank you for your review'. Review: ${review}`;
 
-    const anthropic = getAnthropic();
-    const message = await anthropic.messages.create({
-      model: "claude-3-haiku-20240307",
-      max_tokens: 300,
-      messages: [{ role: "user", content: prompt }],
-    });
-
-    const replyText =
-      message.content[0]?.type === "text"
-        ? message.content[0].text.trim()
-        : "";
+    const genAI = getGemini();
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const result = await model.generateContent(prompt);
+    const replyText = result.response.text().trim();
 
     if (!replyText) {
       return NextResponse.json(
@@ -59,7 +51,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Save to Supabase
     await supabase.from("replies").insert({
       user_id: userId,
       review_text: review,
